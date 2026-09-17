@@ -1,17 +1,16 @@
-# Virtuelle Umgebung (wichtig, damit .venv nicht hochgeladen wird)
+# Virtual environment (important so that .venv is not uploaded)
 .venv/
 venv/
 ENV/
 
-# Python-Cache (wird automatisch beim Starten generiert)
+# Python cache (automatically generated on startup)
 **/__pycache__/
 *.py[cod]
 *$py.class
-test.py
 
-# Windows-Systemdateien
+# Windows system files
 Thumbs.db
 desktop.ini
 
-# VS Code Einstellungen (optional, falls du VS Code nutzt)
+# VS Code settings (optional, if you use VS Code)
 .vscode/
