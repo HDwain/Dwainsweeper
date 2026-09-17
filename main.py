@@ -5,11 +5,11 @@ pygame.init()
 screenwith, screenheight = 1280,720
 screen = pygame.display.set_mode((screenwith, screenheight))
 clock = pygame.time.Clock()
-dt = 0
-
-#r = pygame.Rect(10, 10, 50, 50)
-minefield = pygame.Rect(10, 10, 1000, 700)
-
+gamefield = pygame.Rect(10, 10, 1000, 700)
+singleTile = pygame.Rect(gamefield.left,gamefield.top,25,25)
+countw = int(gamefield.width / singleTile.width)
+counth = int(gamefield.height / singleTile.height)
+grid = [["Black" for j in range(countw)] for i in range(counth)]
 
 running = True
 while running:
@@ -18,17 +18,22 @@ while running:
             running = False
     screen.fill("white")
 
-    pygame.draw.rect(screen,"black",minefield,width=5)
-#    countwidth = int((screenwith-r.left)/(r.width+5))
-#    for i in range(countwidth):
-#        x = r.left + (i*(r.width+5))
-#        pygame.draw.rect(screen, "red", (x,r.top,r.width,r.height))
+    pygame.draw.rect(screen,"black",gamefield,width=2)
+    singleTile.left = gamefield.left
+    singleTile.top = gamefield.top
+
+    for i in range(counth):
+        for j in range(countw):
+            pygame.draw.rect(screen,color=grid[i][j],rect=singleTile,width=1)
+            singleTile.left += singleTile.width
+            
+        singleTile.left = gamefield.left
+        singleTile.top += singleTile.height
    
    
 
     pygame.display.flip() #Show Screen
-    #clock.tick(60) # Max FPS 60
-    dt = clock.tick(60) / 1000
-
+    clock.tick(60) # Max FPS 60
+    
 pygame.quit()
 
