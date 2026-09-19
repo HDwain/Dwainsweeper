@@ -3,55 +3,59 @@ import random
 
 #### Setup ####
 pygame.init()
-screen = pygame.display.set_mode((600, 600))
-gamefield = pygame.Rect(50, 50, 500, 500)
+screen = pygame.display.set_mode((800, 540))
+gamefield = pygame.Rect(20, 20, 500, 500)
 singletile = pygame.Rect(gamefield.left,gamefield.top,50,50)
 tile_count_x = int(gamefield.width / singletile.width) # count rect in width
 tile_count_y = int(gamefield.height / singletile.height) # count rect in height
 clock = pygame.time.Clock()
 
 font = pygame.font.SysFont(None, 30)
+font_large = pygame.font.SysFont(None,60)
 
+def reset_game():
+    game_over = False
 
-##### Grid Creation #####
-grid = [[{"mine": False,
-        "is_revealed": False,
-        "is_flagged": False,
-        "neighbor_count": 0}
-        for j in range(tile_count_x)] for i in range(tile_count_y)]
+    ##### Grid Creation #####
+    grid = [[{"mine": False,
+            "is_revealed": False,
+            "is_flagged": False,
+            "neighbor_count": 0}
+            for j in range(tile_count_x)] for i in range(tile_count_y)]
 
-##### Mine Placement ####
-count_mines = 20
-placed_mines = 0
-while placed_mines < count_mines:
-    random_i = random.randint(0, tile_count_y -1)
-    random_j = random.randint(0,tile_count_x -1)
-    if grid[random_i][random_j]["mine"] == False:
-        grid[random_i][random_j]["mine"] = True
-        placed_mines+=1
+    ##### Mine Placement ####
+    count_mines = 20
+    placed_mines = 0
+    while placed_mines < count_mines:
+        random_i = random.randint(0, tile_count_y -1)
+        random_j = random.randint(0,tile_count_x -1)
+        if grid[random_i][random_j]["mine"] == False:
+            grid[random_i][random_j]["mine"] = True
+            placed_mines+=1
 
-################## Update Neighbors #########
+    ################## Update Neighbors #########
 
-## for every tile ##
-for i in range(tile_count_y):
-    for j in range(tile_count_x):  
+    ## for every tile ##
+    for i in range(tile_count_y):
+        for j in range(tile_count_x):  
 
-        if grid[i][j]["mine"] == True: ## skip if self mine
-            continue
+            if grid[i][j]["mine"] == True: ## skip if self mine
+                continue
 
-        ## every neighbor ##
-        for ni in [-1,0,1]:
-            for nj in [-1,0,1]:
+            ## every neighbor ##
+            for ni in [-1,0,1]:
+                for nj in [-1,0,1]:
 
-                if ni == 0 and nj == 0: ## skip self
-                    continue
+                    if ni == 0 and nj == 0: ## skip self
+                        continue
 
-                check_i = i + ni # neighbor index i
-                check_j = j + nj # neighbor index j
+                    check_i = i + ni # neighbor index i
+                    check_j = j + nj # neighbor index j
 
-                if 0 <= check_i < tile_count_y and 0 <= check_j < tile_count_x: # if neighbor is inside the gamefield
-                    if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
-                        grid[i][j]["neighbor_count"]+=1               # increase neighbor count
+                    if 0 <= check_i < tile_count_y and 0 <= check_j < tile_count_x: # if neighbor is inside the gamefield
+                        if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
+                            grid[i][j]["neighbor_count"]+=1               # increase neighbor count
+    return grid,game_over
 
 def get_grid_pos(mouse_pos):
     mouse_x,mouse_y = mouse_pos
@@ -64,35 +68,46 @@ def get_grid_pos(mouse_pos):
 
 ######################## Game Loop ###############################    
 running = True
+grid,game_over = reset_game()
 while running:
 
-    #### Event handler ##############################
+    #### Event handler ###################################################################################
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                grid,game_over = reset_game()
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # LMB                
-                mouse_i,mouse_j = get_grid_pos(event.pos)
-                if mouse_i is not None and mouse_j is not None:
-                    if grid[mouse_i][mouse_j]["is_flagged"] == False:
-                        grid[mouse_i][mouse_j]["is_revealed"] = True
-
-            if event.button == 3: # RMB                
-                mouse_i,mouse_j = get_grid_pos(event.pos)
-                if mouse_i is not None and mouse_j is not None:
-                    if grid[mouse_i][mouse_j]["is_revealed"] == False: 
+                if game_over == False:
+                    mouse_i,mouse_j = get_grid_pos(event.pos)
+                    if mouse_i is not None and mouse_j is not None:
                         if grid[mouse_i][mouse_j]["is_flagged"] == False:
-                            grid[mouse_i][mouse_j]["is_flagged"] = True
-                        else:
-                            grid[mouse_i][mouse_j]["is_flagged"] = False
+                            ### Reveal ###                            
+                            grid[mouse_i][mouse_j]["is_revealed"] = True
+                            if grid[mouse_i][mouse_j]["mine"] == True:  ## if mine revealed
+                                game_over = True
 
-    ################### Draw #########################
+            if event.button == 3: # RMB   
+                if game_over == False:             
+                    mouse_i,mouse_j = get_grid_pos(event.pos)
+                    if mouse_i is not None and mouse_j is not None:
+                        if grid[mouse_i][mouse_j]["is_revealed"] == False: 
+                            if grid[mouse_i][mouse_j]["is_flagged"] == False:
+                                grid[mouse_i][mouse_j]["is_flagged"] = True
+                            else:
+                                grid[mouse_i][mouse_j]["is_flagged"] = False
+
+    ################### Draw ###########################################################################
     screen.fill("white")
     pygame.draw.rect(screen,color="grey",rect=gamefield,width=2)
     for i in range(tile_count_y):
         for j in range(tile_count_x):            
 
-            #### Calculate Single Square ######################
+            #### Calculate Single Square #######################
             tile_x = gamefield.left + j * singletile.width
             tile_y = gamefield.top + i * singletile.height
             tile_rect = pygame.Rect(tile_x, tile_y, singletile.width, singletile.height)
@@ -101,8 +116,10 @@ while running:
             if grid[i][j]["is_revealed"] == True:
                 pygame.draw.rect(screen,"white",rect=tile_rect)
                 pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
+                if grid[i][j]["mine"] == True:
+                    pygame.draw.circle(screen,"red",tile_rect.center,radius=(tile_rect.width/3))
 
-                if grid[i][j]["neighbor_count"] > 0:  ### if has neighbors
+                if grid[i][j]["neighbor_count"] > 0:    ### if has neighbors
                     mines = grid[i][j]["neighbor_count"]    
                     text_surface = font.render(str(mines),True,"black")         ### change number into picture 
                     text_rect = text_surface.get_rect(center=tile_rect.center)  ### get center pos of rect
@@ -110,15 +127,25 @@ while running:
             else:
                 pygame.draw.rect(screen,"grey",rect=tile_rect)
                 pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
-                if grid[i][j]["is_flagged"] == True:
+
+                if grid[i][j]["is_flagged"] == True: ### if flagged
                     flag_rect = pygame.Rect(0,0,tile_rect.width/2,tile_rect.height/2)
                     flag_rect.center = tile_rect.center
-                    pygame.draw.rect(screen,"red",rect=flag_rect)
+                    pygame.draw.rect(screen,"blue",rect=flag_rect)
 
-            #draw mine# (delete later)
-            #if grid[i][j]["mine"] == True:
-            #    pygame.draw.circle(screen,"red",tile_rect.center,radius=(tile_rect.width/3))
-   
+    ######## Game Over ########
+    if game_over:
+        text_surface = font_large.render("GAME OVER !",True,"crimson") #change to picture
+        text_rect = text_surface.get_rect(center=gamefield.center) #
+        text_rect.centery = gamefield.top + gamefield.height / 3
+        screen.blit(text_surface,text_rect)
+        restart_surface = font.render("for Restart press R", True, "crimson")
+        restart_rect = restart_surface.get_rect()
+        restart_rect.centerx = gamefield.centerx
+        restart_rect.top = text_rect.bottom + 10
+        screen.blit(restart_surface,restart_rect)
+
+
    #############################################################################################
 
     pygame.display.flip() #Show Screen
