@@ -1,6 +1,7 @@
 import pygame
+import random
 
-#setup
+#### Setup ####
 pygame.init()
 screenwith, screenheight = 600,600
 screen = pygame.display.set_mode((screenwith, screenheight))
@@ -9,13 +10,25 @@ gamefield = pygame.Rect(50, 50, 500, 500)
 singletile = pygame.Rect(gamefield.left,gamefield.top,50,50)
 count_w = int(gamefield.width / singletile.width) # anzahle quadrate in der breite
 count_h = int(gamefield.height / singletile.height) # anzahl quadrate in der höhe
-
+#### Grid Creation ####
 grid = [[{"mine": False,
         "aufgedeckt": False,
         "markiert": False,
         "nachbarn": 0}
         for j in range(count_w)] for i in range(count_h)]
 
+##### Mine Placement ####
+count_mines = 10
+placed_mines = 0
+while placed_mines < count_mines:
+    random_i = random.randint(0, count_h -1)
+    random_j = random.randint(0,count_w -1)
+    if grid[random_i][random_j]["mine"] == False:
+        grid[random_i][random_j]["mine"] = True
+        placed_mines+=1
+    
+
+### Game Loop ####    
 running = True
 while running:
 
@@ -50,6 +63,8 @@ while running:
             else:
                 pygame.draw.rect(screen,"grey",rect=tile_rect)
                 pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
+            if grid[i][j]["mine"] == True:
+                pygame.draw.circle(screen,"red",tile_rect.center,radius=15)
    
    #############################################################################################
 
