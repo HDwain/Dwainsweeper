@@ -9,12 +9,14 @@ singletile = pygame.Rect(gamefield.left,gamefield.top,50,50)
 tile_count_x = int(gamefield.width / singletile.width) # count rect in width
 tile_count_y = int(gamefield.height / singletile.height) # count rect in height
 clock = pygame.time.Clock()
+score = 0
 
 font = pygame.font.SysFont(None, 30)
 font_large = pygame.font.SysFont(None,60)
 
 def reset_game():
     game_over = False
+    game_won = False
 
     ##### Grid Creation #####
     grid = [[{"mine": False,
@@ -55,7 +57,14 @@ def reset_game():
                     if 0 <= check_i < tile_count_y and 0 <= check_j < tile_count_x: # if neighbor is inside the gamefield
                         if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
                             grid[i][j]["neighbor_count"]+=1               # increase neighbor count
-    return grid,game_over
+    return grid,game_over,game_won
+
+def check_win(grid):
+    for i in range(tile_count_y): 
+        for j in range(tile_count_x):
+            if grid[i][j]["mine"] == False and grid[i][j]["is_revealed"] == False:
+                return False  
+    return True
 
 def get_grid_pos(mouse_pos):
     mouse_x,mouse_y = mouse_pos
@@ -68,7 +77,7 @@ def get_grid_pos(mouse_pos):
 
 ######################## Game Loop ###############################    
 running = True
-grid,game_over = reset_game()
+grid,game_over,game_won = reset_game()
 while running:
 
     #### Event handler ###################################################################################
@@ -78,21 +87,27 @@ while running:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
-                grid,game_over = reset_game()
+                grid,game_over,game_won = reset_game()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1: # LMB                
-                if game_over == False:
-                    mouse_i,mouse_j = get_grid_pos(event.pos)
+            if event.button == 1: # LMB                  
+                if game_over == False and game_won == False:
+
+                    mouse_i,mouse_j = get_grid_pos(event.pos)                                     
                     if mouse_i is not None and mouse_j is not None:
-                        if grid[mouse_i][mouse_j]["is_flagged"] == False:
-                            ### Reveal ###                            
-                            grid[mouse_i][mouse_j]["is_revealed"] = True
-                            if grid[mouse_i][mouse_j]["mine"] == True:  ## if mine revealed
+                        if grid[mouse_i][mouse_j]["is_flagged"] == False:                                                                                           
+                            grid[mouse_i][mouse_j]["is_revealed"] = True    ## Reveal
+                                    ###check game status ##
+                            if grid[mouse_i][mouse_j]["mine"] == True:      ## if mine revealed
                                 game_over = True
+                            else:
+                                game_won = check_win(grid)
+                                if game_won == True:
+                                    score += 1
+                                    print("Score:",score)
 
             if event.button == 3: # RMB   
-                if game_over == False:             
+                if game_over == False and game_won == False:             
                     mouse_i,mouse_j = get_grid_pos(event.pos)
                     if mouse_i is not None and mouse_j is not None:
                         if grid[mouse_i][mouse_j]["is_revealed"] == False: 
@@ -127,7 +142,7 @@ while running:
             else:
                 pygame.draw.rect(screen,"grey",rect=tile_rect)
                 pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
-
+                
                 if grid[i][j]["is_flagged"] == True: ### if flagged
                     flag_rect = pygame.Rect(0,0,tile_rect.width/2,tile_rect.height/2)
                     flag_rect.center = tile_rect.center
@@ -135,16 +150,26 @@ while running:
 
     ######## Game Over ########
     if game_over:
+        ### Game Over ###
         text_surface = font_large.render("GAME OVER !",True,"crimson") #change to picture
         text_rect = text_surface.get_rect(center=gamefield.center) #
         text_rect.centery = gamefield.top + gamefield.height / 3
         screen.blit(text_surface,text_rect)
+
+        ### Restart text ###
         restart_surface = font.render("for Restart press R", True, "crimson")
         restart_rect = restart_surface.get_rect()
         restart_rect.centerx = gamefield.centerx
         restart_rect.top = text_rect.bottom + 10
         screen.blit(restart_surface,restart_rect)
 
+    ######## Game Won #########
+    if game_won:
+        text_surface = font_large.render("GG WP EZ GET RECKT !",True,"forestgreen")
+        text_rect = text_surface.get_rect(center=gamefield.center)
+        text_rect.centery = gamefield.top + gamefield.height / 3
+        screen.blit(text_surface,text_rect)
+        
 
    #############################################################################################
 
