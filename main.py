@@ -3,14 +3,22 @@ import random
 
 #### Setup ####
 pygame.init()
-screen = pygame.display.set_mode((800, 540))
-gamefield = pygame.Rect(20, 20, 500, 500)
+width,height = 800,540
+margin,gap = 20,10
+screen = pygame.display.set_mode((width, height))
+gamefield = pygame.Rect(margin, margin, 500, 500)
 singletile = pygame.Rect(gamefield.left,gamefield.top,50,50)
 tile_count_x = int(gamefield.width / singletile.width) # count rect in width
 tile_count_y = int(gamefield.height / singletile.height) # count rect in height
 clock = pygame.time.Clock()
 score = 0
 
+##### Text Box ####
+textframe_x = gamefield.right+gap
+textframe_w = width - textframe_x - margin
+textframe = pygame.Rect(textframe_x,margin,textframe_w,gamefield.height)
+
+font_small = pygame.font.SysFont(None,20)
 font = pygame.font.SysFont(None, 30)
 font_large = pygame.font.SysFont(None,60)
 
@@ -57,14 +65,27 @@ def reset_game():
                     if 0 <= check_i < tile_count_y and 0 <= check_j < tile_count_x: # if neighbor is inside the gamefield
                         if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
                             grid[i][j]["neighbor_count"]+=1               # increase neighbor count
-    return grid,game_over,game_won
-
+    return grid, game_over, game_won, count_mines
+    
 def check_win(grid):
     for i in range(tile_count_y): 
         for j in range(tile_count_x):
             if grid[i][j]["mine"] == False and grid[i][j]["is_revealed"] == False:
                 return False  
     return True
+
+def draw_text(surface, text, font, color, center_pos):
+    text_surf = font.render(str(text), True, color)         #create text as picture
+    text_rect = text_surf.get_rect(center=center_pos)       #position picture
+    surface.blit(text_surf, text_rect)                      #Display on screen
+
+def count_flags(grid):
+    count = 0
+    for i in range(tile_count_y):
+        for j in range(tile_count_x):
+            if grid[i][j]["is_flagged"] == True:
+                count += 1
+    return count
 
 def get_grid_pos(mouse_pos):
     mouse_x,mouse_y = mouse_pos
@@ -77,7 +98,7 @@ def get_grid_pos(mouse_pos):
 
 ######################## Game Loop ###############################    
 running = True
-grid,game_over,game_won = reset_game()
+grid,game_over,game_won,mines_count = reset_game()
 while running:
 
     #### Event handler ###################################################################################
@@ -87,7 +108,7 @@ while running:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
-                grid,game_over,game_won = reset_game()
+                grid,game_over,game_won,mines_count = reset_game()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # LMB                  
@@ -122,12 +143,12 @@ while running:
     for i in range(tile_count_y):
         for j in range(tile_count_x):            
 
-            #### Calculate Single Square #######################
+            ####### Calculate Single Square #######################
             tile_x = gamefield.left + j * singletile.width
             tile_y = gamefield.top + i * singletile.height
             tile_rect = pygame.Rect(tile_x, tile_y, singletile.width, singletile.height)
 
-            #### Draw ##########################################
+            ####### Draw ##########################################
             if grid[i][j]["is_revealed"] == True:
                 pygame.draw.rect(screen,"white",rect=tile_rect)
                 pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
@@ -143,33 +164,37 @@ while running:
                 pygame.draw.rect(screen,"grey",rect=tile_rect)
                 pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
                 
-                if grid[i][j]["is_flagged"] == True: ### if flagged
+                if grid[i][j]["is_flagged"] == True: ##################################### if flagged draw flag ##################################
                     flag_rect = pygame.Rect(0,0,tile_rect.width/2,tile_rect.height/2)
                     flag_rect.center = tile_rect.center
                     pygame.draw.rect(screen,"blue",rect=flag_rect)
 
-    ######## Game Over ########
+    ##### TextBox #####
+    pygame.draw.rect(screen,"black",textframe,width=1)
+    score_pos = (textframe.centerx,textframe.top + 40)
+    flagged_pos = (textframe.centerx,textframe.bottom - 120)
+    mine_count_pos = (textframe.centerx,textframe.bottom - 80)
+    reset_pos = (textframe.centerx,textframe.bottom - 40)
+    draw_text(screen,f"Score: {score}",font,"black",score_pos)
+    draw_text(screen,f"Mines: {mines_count}",font,"black",mine_count_pos) 
+    draw_text(screen,f"Flagges: {count_flags(grid)}",font,"black",flagged_pos)
+    draw_text(screen,"Press R to Restart",font_small,"black",reset_pos)
+
+    ################################ Game Over #########################################
     if game_over:
-        ### Game Over ###
+
+        ###### Game Over #######
         text_surface = font_large.render("GAME OVER !",True,"crimson") #change to picture
         text_rect = text_surface.get_rect(center=gamefield.center) #
         text_rect.centery = gamefield.top + gamefield.height / 3
         screen.blit(text_surface,text_rect)
-
-        ### Restart text ###
-        restart_surface = font.render("for Restart press R", True, "crimson")
-        restart_rect = restart_surface.get_rect()
-        restart_rect.centerx = gamefield.centerx
-        restart_rect.top = text_rect.bottom + 10
-        screen.blit(restart_surface,restart_rect)
 
     ######## Game Won #########
     if game_won:
         text_surface = font_large.render("GG WP EZ GET RECKT !",True,"forestgreen")
         text_rect = text_surface.get_rect(center=gamefield.center)
         text_rect.centery = gamefield.top + gamefield.height / 3
-        screen.blit(text_surface,text_rect)
-        
+        screen.blit(text_surface,text_rect)        
 
    #############################################################################################
 
