@@ -1,6 +1,12 @@
 import pygame
 import random
 
+#TODO Chain reveal
+#TODO implement first click safe
+#TODO Implement difficulties
+#TODO enum
+
+
 #### Setup ####
 pygame.init()
 width,height = 800,540
@@ -34,7 +40,7 @@ def reset_game():
             for j in range(tile_count_x)] for i in range(tile_count_y)]
 
     ##### Mine Placement ####
-    count_mines = 20
+    count_mines = int(tile_count_x * tile_count_y * 0.1)
     placed_mines = 0
     while placed_mines < count_mines:
         random_i = random.randint(0, tile_count_y -1)
@@ -43,7 +49,7 @@ def reset_game():
             grid[random_i][random_j]["mine"] = True
             placed_mines+=1
 
-    ################## Update Neighbors #########
+    ################## Update Neighbors #####################
 
     ## for every tile ##
     for i in range(tile_count_y):
@@ -62,9 +68,12 @@ def reset_game():
                     check_i = i + ni # neighbor index i
                     check_j = j + nj # neighbor index j
 
-                    if 0 <= check_i < tile_count_y and 0 <= check_j < tile_count_x: # if neighbor is inside the gamefield
-                        if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
-                            grid[i][j]["neighbor_count"]+=1               # increase neighbor count
+                    if check_j >= 0 and check_j < tile_count_x:               # ifs check is in gamefield area
+                        if check_i >= 0 and check_i < tile_count_y:           #
+
+                            if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
+                                grid[i][j]["neighbor_count"]+=1               # increase neighbor count
+
     return grid, game_over, game_won, count_mines
     
 def check_win(grid):
@@ -125,7 +134,6 @@ while running:
                                 game_won = check_win(grid)
                                 if game_won == True:
                                     score += 1
-                                    print("Score:",score)
 
             if event.button == 3: # RMB   
                 if game_over == False and game_won == False:             
