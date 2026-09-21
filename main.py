@@ -1,7 +1,7 @@
 import pygame
 import random
 
-#TODO Chain reveal
+#TODO Show Highest Winning Streak 
 #TODO implement first click safe
 #TODO Implement difficulties
 #TODO enum
@@ -105,6 +105,31 @@ def get_grid_pos(mouse_pos):
             return mouse_i,mouse_j
     return None,None
 
+def reveal_tile(grid,i,j):
+    if j >= 0 and j < tile_count_x:                             # check if tile is on gamefield
+        if i >= 0 and i < tile_count_y:                         # check if tile is on gamefield
+            
+            if grid[i][j]["is_revealed"] or grid[i][j]["is_flagged"]:   # cancel if field is flagged or revealed
+                return
+            
+            grid[i][j]["is_revealed"] = True        # Reveal
+
+            if grid[i][j]["mine"]:                  # if mine then cancel the recursiv revealing
+                return            
+
+            if grid[i][j]["neighbor_count"] == 0:   # if field has 0 neighbor mines, go recursiv
+
+            ##### Rekursiv Check #####
+                for ni in [-1,0,1]:                 # get neighbours
+                    for nj in [-1,0,1]:             # get neighbours
+                        if ni == 0 and nj == 0:     
+                            continue
+
+                        check_i = i + ni            # neighbor index i
+                        check_j = j + nj            # neighbor index j                        
+
+                        reveal_tile(grid,check_i,check_j)   #recurse with neighbor field                            
+            
 ######################## Game Loop ###############################    
 running = True
 grid,game_over,game_won,mines_count = reset_game()
@@ -117,6 +142,8 @@ while running:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
+                if game_won != True:
+                    score = 0
                 grid,game_over,game_won,mines_count = reset_game()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -126,7 +153,8 @@ while running:
                     mouse_i,mouse_j = get_grid_pos(event.pos)                                     
                     if mouse_i is not None and mouse_j is not None:
                         if grid[mouse_i][mouse_j]["is_flagged"] == False:                                                                                           
-                            grid[mouse_i][mouse_j]["is_revealed"] = True    ## Reveal
+                            reveal_tile(grid,mouse_i,mouse_j)               ## Reveal
+
                                     ###check game status ##
                             if grid[mouse_i][mouse_j]["mine"] == True:      ## if mine revealed
                                 game_over = True
@@ -151,8 +179,8 @@ while running:
     for i in range(tile_count_y):
         for j in range(tile_count_x):            
 
-            ####### Calculate Single Square #######################
-            tile_x = gamefield.left + j * singletile.width
+            ####### Calculate Single Tile Pos #######################
+            tile_x = gamefield.left + j * singletile.width        
             tile_y = gamefield.top + i * singletile.height
             tile_rect = pygame.Rect(tile_x, tile_y, singletile.width, singletile.height)
 
@@ -183,7 +211,7 @@ while running:
     flagged_pos = (textframe.centerx,textframe.bottom - 120)
     mine_count_pos = (textframe.centerx,textframe.bottom - 80)
     reset_pos = (textframe.centerx,textframe.bottom - 40)
-    draw_text(screen,f"Score: {score}",font,"black",score_pos)
+    draw_text(screen,f"Winning Streak: {score}",font,"black",score_pos)
     draw_text(screen,f"Mines: {mines_count}",font,"black",mine_count_pos) 
     draw_text(screen,f"Flagges: {count_flags(grid)}",font,"black",flagged_pos)
     draw_text(screen,"Press R to Restart",font_small,"black",reset_pos)
@@ -199,9 +227,9 @@ while running:
 
     ######## Game Won #########
     if game_won:
-        text_surface = font_large.render("GG WP EZ GET RECKT !",True,"forestgreen")
+        text_surface = font_large.render("GG WP You WON !",True,"forestgreen")
         text_rect = text_surface.get_rect(center=gamefield.center)
-        text_rect.centery = gamefield.top + gamefield.height / 3
+        text_rect.centery = gamefield.top + gamefield.height / 3 + 10
         screen.blit(text_surface,text_rect)        
 
    #############################################################################################

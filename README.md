@@ -2,14 +2,7 @@
 
 ⚠️ **Note:** This project is currently in early development.
 
-A classic Minesweeper game built in Python using Pygame.
-
----
-
-## 📋 Requirements
-
-* **Python:** Version 3.11 or 3.12
-* **Dependencies:** `pygame-ce` (installed via `pip` inside a virtual environment)
+A classic Minesweeper game built in Python using Pygame-ce.
 
 ## 💻 How to Run (Development Setup)
 
@@ -44,7 +37,9 @@ A classic Minesweeper game built in Python using Pygame.
 ---
 
 ## 🚀 Upcoming Features (Roadmap)
+
 Since this project is in early development, here is what is planned next:
-* [ ] Chain reveal
+* [x] Chain reveal
 * [ ] Implement first click safe
 * [ ] Implement difficulties
+* [ ] Icons and graphics overhaul
