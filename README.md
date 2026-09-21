@@ -9,7 +9,7 @@ A classic Minesweeper game built in Python using Pygame.
 ## 📋 Requirements
 
 * **Python:** Version 3.11 or 3.12
-* **Dependencies:** Managed via virtual environment (see below)
+* **Dependencies:** `pygame-ce` (installed via `pip` inside a virtual environment)
 
 ## 💻 How to Run (Development Setup)
 
