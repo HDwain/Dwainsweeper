@@ -5,6 +5,7 @@ import random
 #TODO implement first click safe
 #TODO Implement difficulties
 #TODO enum
+#TODO Themes
 
 
 #### Setup ####
@@ -17,6 +18,7 @@ singletile = pygame.Rect(gamefield.left,gamefield.top,50,50)
 tile_count_x = int(gamefield.width / singletile.width) # count rect in width
 tile_count_y = int(gamefield.height / singletile.height) # count rect in height
 clock = pygame.time.Clock()
+Highscore = 0
 score = 0
 
 ##### Text Box ####
@@ -26,7 +28,7 @@ textframe = pygame.Rect(textframe_x,margin,textframe_w,gamefield.height)
 
 font_small = pygame.font.SysFont(None,20)
 font = pygame.font.SysFont(None, 30)
-font_large = pygame.font.SysFont(None,60)
+font_large = pygame.font.SysFont(None,100)
 
 def reset_game():
     game_over = False
@@ -162,6 +164,8 @@ while running:
                                 game_won = check_win(grid)
                                 if game_won == True:
                                     score += 1
+                                    if (score > Highscore):
+                                        Highscore = score
 
             if event.button == 3: # RMB   
                 if game_over == False and game_won == False:             
@@ -208,13 +212,15 @@ while running:
     ##### TextBox #####
     pygame.draw.rect(screen,"black",textframe,width=1)
     score_pos = (textframe.centerx,textframe.top + 40)
+    Highscore_pos = (textframe.centerx,textframe.top + 80)
     flagged_pos = (textframe.centerx,textframe.bottom - 120)
     mine_count_pos = (textframe.centerx,textframe.bottom - 80)
     reset_pos = (textframe.centerx,textframe.bottom - 40)
     draw_text(screen,f"Winning Streak: {score}",font,"black",score_pos)
+    draw_text(screen,f"Highest Score: {Highscore}",font,"darkgreen",Highscore_pos)
     draw_text(screen,f"Mines: {mines_count}",font,"black",mine_count_pos) 
     draw_text(screen,f"Flagges: {count_flags(grid)}",font,"black",flagged_pos)
-    draw_text(screen,"Press R to Restart",font_small,"black",reset_pos)
+    draw_text(screen,"Press R to Restart",font_small,"red",reset_pos)
 
     ################################ Game Over #########################################
     if game_over:
@@ -222,12 +228,12 @@ while running:
         ###### Game Over #######
         text_surface = font_large.render("GAME OVER !",True,"crimson") #change to picture
         text_rect = text_surface.get_rect(center=gamefield.center) #
-        text_rect.centery = gamefield.top + gamefield.height / 3
+        text_rect.centery = gamefield.top + gamefield.height / 3 + 10
         screen.blit(text_surface,text_rect)
 
     ######## Game Won #########
     if game_won:
-        text_surface = font_large.render("GG WP You WON !",True,"forestgreen")
+        text_surface = font_large.render("YOU WON !",True,"forestgreen")
         text_rect = text_surface.get_rect(center=gamefield.center)
         text_rect.centery = gamefield.top + gamefield.height / 3 + 10
         screen.blit(text_surface,text_rect)        
