@@ -1,5 +1,6 @@
 import pygame
 import random
+from enum import Enum, auto
 
 #TODO Show Highest Winning Streak 
 #TODO implement first click safe
@@ -7,6 +8,10 @@ import random
 #TODO enum
 #TODO Themes
 
+class GameState(Enum):
+    RUNNING = auto()
+    WON = auto()
+    GAME_OVER = auto()
 
 #### Setup ####
 pygame.init()
@@ -31,8 +36,7 @@ font = pygame.font.SysFont(None, 30)
 font_large = pygame.font.SysFont(None,100)
 
 def reset_game():
-    game_over = False
-    game_won = False
+    game_state = GameState.RUNNING
 
     ##### Grid Creation #####
     grid = [[{"mine": False,
@@ -76,7 +80,7 @@ def reset_game():
                             if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
                                 grid[i][j]["neighbor_count"]+=1               # increase neighbor count
 
-    return grid, game_over, game_won, count_mines
+    return grid, game_state, count_mines
     
 def check_win(grid):
     for i in range(tile_count_y): 
@@ -134,7 +138,7 @@ def reveal_tile(grid,i,j):
             
 ######################## Game Loop ###############################    
 running = True
-grid,game_over,game_won,mines_count = reset_game()
+grid,game_state,mines_count = reset_game()
 while running:
 
     #### Event handler ###################################################################################
@@ -144,13 +148,13 @@ while running:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
-                if game_won != True:
+                if game_state != GameState.WON:
                     score = 0
-                grid,game_over,game_won,mines_count = reset_game()
+                grid,game_state,mines_count = reset_game()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # LMB                  
-                if game_over == False and game_won == False:
+                if game_state == GameState.RUNNING:
 
                     mouse_i,mouse_j = get_grid_pos(event.pos)                                     
                     if mouse_i is not None and mouse_j is not None:
@@ -159,16 +163,16 @@ while running:
 
                                     ###check game status ##
                             if grid[mouse_i][mouse_j]["mine"] == True:      ## if mine revealed
-                                game_over = True
+                                game_state = GameState.GAME_OVER
                             else:
-                                game_won = check_win(grid)
-                                if game_won == True:
+                                if check_win(grid):
+                                    game_state = GameState.WON
                                     score += 1
                                     if (score > Highscore):
                                         Highscore = score
 
             if event.button == 3: # RMB   
-                if game_over == False and game_won == False:             
+                if game_state == GameState.RUNNING:             
                     mouse_i,mouse_j = get_grid_pos(event.pos)
                     if mouse_i is not None and mouse_j is not None:
                         if grid[mouse_i][mouse_j]["is_revealed"] == False: 
@@ -223,7 +227,7 @@ while running:
     draw_text(screen,"Press R to Restart",font_small,"red",reset_pos)
 
     ################################ Game Over #########################################
-    if game_over:
+    if game_state == GameState.GAME_OVER:
 
         ###### Game Over #######
         text_surface = font_large.render("GAME OVER !",True,"crimson") #change to picture
@@ -232,7 +236,7 @@ while running:
         screen.blit(text_surface,text_rect)
 
     ######## Game Won #########
-    if game_won:
+    if game_state == GameState.WON:
         text_surface = font_large.render("YOU WON !",True,"forestgreen")
         text_rect = text_surface.get_rect(center=gamefield.center)
         text_rect.centery = gamefield.top + gamefield.height / 3 + 10
