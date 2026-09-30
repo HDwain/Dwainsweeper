@@ -24,9 +24,9 @@ A classic Minesweeper game built in Python using Pygame-ce.
      source .venv/bin/activate
      ```
 
-3. Install Pygame:
+3. Install dependencies:
    ```bash
-   pip install pygame-ce
+   pip install -r requirements.txt
    ```
 
 4. Start the game:
@@ -40,6 +40,6 @@ A classic Minesweeper game built in Python using Pygame-ce.
 
 Since this project is in early development, here is what is planned next:
 * [x] Chain reveal
-* [ ] Implement first click safe
+* [x] Implement first click safe
 * [ ] Implement difficulties
 * [ ] Icons and graphics overhaul

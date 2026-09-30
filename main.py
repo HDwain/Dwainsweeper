@@ -1,17 +1,30 @@
 import pygame
 import random
+import json
 from enum import Enum, auto
 
-#TODO Show Highest Winning Streak 
-#TODO implement first click safe
 #TODO Implement difficulties
-#TODO enum
 #TODO Themes
 
 class GameState(Enum):
     RUNNING = auto()
     WON = auto()
     GAME_OVER = auto()
+
+def load_highscore():
+    try:
+        with open(FILENAME,"r") as file:
+            data = json.load(file)
+            return data.get("Highscore", 0)
+    except FileNotFoundError:
+        return 0
+
+def save_highscore(new_highscore):
+    try:
+        with open(FILENAME,"w") as file:
+            json.dump({"Highscore":new_highscore},file)
+    except FileNotFoundError:
+        return
 
 #### Setup ####
 pygame.init()
@@ -23,7 +36,8 @@ singletile = pygame.Rect(gamefield.left,gamefield.top,50,50)
 tile_count_x = int(gamefield.width / singletile.width) # count rect in width
 tile_count_y = int(gamefield.height / singletile.height) # count rect in height
 clock = pygame.time.Clock()
-Highscore = 0
+FILENAME = "dhighscore.json"
+Highscore = load_highscore()
 score = 0
 
 ##### Text Box ####
@@ -35,8 +49,50 @@ font_small = pygame.font.SysFont(None,20)
 font = pygame.font.SysFont(None, 30)
 font_large = pygame.font.SysFont(None,100)
 
+
+def place_mines(grid,count_mines,click_i,click_j):
+
+            ##### Mine Placement ####    
+    placed_mines = 0
+    while placed_mines < count_mines:
+        random_i = random.randint(0, tile_count_y -1)
+        random_j = random.randint(0,tile_count_x -1)
+        if abs(random_i - click_i) > 1 or abs(random_j -click_j) > 1: #if field is clicked
+
+            if grid[random_i][random_j]["mine"] == False:
+                grid[random_i][random_j]["mine"] = True
+                placed_mines+=1
+
+    ################## Update Neighbors #####################
+    
+        ## for every tile ##
+    for i in range(tile_count_y):
+        for j in range(tile_count_x):  
+    
+            if grid[i][j]["mine"] == True: ## skip if self mine
+                continue
+    
+                ## every neighbor ##
+            for ni in [-1,0,1]:
+                for nj in [-1,0,1]:
+    
+                    if ni == 0 and nj == 0: ## skip self
+                        continue
+    
+                    check_i = i + ni # neighbor index i
+                    check_j = j + nj # neighbor index j
+    
+                    if check_j >= 0 and check_j < tile_count_x:               # ifs check is in gamefield area
+                        if check_i >= 0 and check_i < tile_count_y:           #
+    
+                            if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
+                                grid[i][j]["neighbor_count"]+=1               # increase neighbor count
+    return grid
+
+
 def reset_game():
     game_state = GameState.RUNNING
+    first_click = True
 
     ##### Grid Creation #####
     grid = [[{"mine": False,
@@ -45,42 +101,9 @@ def reset_game():
             "neighbor_count": 0}
             for j in range(tile_count_x)] for i in range(tile_count_y)]
 
-    ##### Mine Placement ####
-    count_mines = int(tile_count_x * tile_count_y * 0.1)
-    placed_mines = 0
-    while placed_mines < count_mines:
-        random_i = random.randint(0, tile_count_y -1)
-        random_j = random.randint(0,tile_count_x -1)
-        if grid[random_i][random_j]["mine"] == False:
-            grid[random_i][random_j]["mine"] = True
-            placed_mines+=1
+    count_mines = int(tile_count_x * tile_count_y * 0.1)   
 
-    ################## Update Neighbors #####################
-
-    ## for every tile ##
-    for i in range(tile_count_y):
-        for j in range(tile_count_x):  
-
-            if grid[i][j]["mine"] == True: ## skip if self mine
-                continue
-
-            ## every neighbor ##
-            for ni in [-1,0,1]:
-                for nj in [-1,0,1]:
-
-                    if ni == 0 and nj == 0: ## skip self
-                        continue
-
-                    check_i = i + ni # neighbor index i
-                    check_j = j + nj # neighbor index j
-
-                    if check_j >= 0 and check_j < tile_count_x:               # ifs check is in gamefield area
-                        if check_i >= 0 and check_i < tile_count_y:           #
-
-                            if grid[check_i][check_j]["mine"] == True:        # if neighbor is mine
-                                grid[i][j]["neighbor_count"]+=1               # increase neighbor count
-
-    return grid, game_state, count_mines
+    return grid, game_state, count_mines,first_click
     
 def check_win(grid):
     for i in range(tile_count_y): 
@@ -138,7 +161,7 @@ def reveal_tile(grid,i,j):
             
 ######################## Game Loop ###############################    
 running = True
-grid,game_state,mines_count = reset_game()
+grid,game_state,mines_count,first_click  = reset_game()
 while running:
 
     #### Event handler ###################################################################################
@@ -150,7 +173,7 @@ while running:
             if event.key == pygame.K_r:
                 if game_state != GameState.WON:
                     score = 0
-                grid,game_state,mines_count = reset_game()
+                grid,game_state,mines_count,first_click = reset_game()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # LMB                  
@@ -158,7 +181,10 @@ while running:
 
                     mouse_i,mouse_j = get_grid_pos(event.pos)                                     
                     if mouse_i is not None and mouse_j is not None:
-                        if grid[mouse_i][mouse_j]["is_flagged"] == False:                                                                                           
+                        if grid[mouse_i][mouse_j]["is_flagged"] == False:  
+                            if first_click == True:
+                                place_mines(grid,mines_count,mouse_i,mouse_j)
+                                first_click = False                                                                                          
                             reveal_tile(grid,mouse_i,mouse_j)               ## Reveal
 
                                     ###check game status ##
@@ -170,6 +196,7 @@ while running:
                                     score += 1
                                     if (score > Highscore):
                                         Highscore = score
+                                        save_highscore(Highscore)
 
             if event.button == 3: # RMB   
                 if game_state == GameState.RUNNING:             
