@@ -31,6 +31,7 @@ pygame.init()
 width,height = 800,540
 margin,gap = 20,10
 screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Dwainsweeper")
 gamefield = pygame.Rect(margin, margin, 500, 500)
 singletile = pygame.Rect(gamefield.left,gamefield.top,50,50)
 tile_count_x = int(gamefield.width / singletile.width) # count rect in width
@@ -40,6 +41,17 @@ FILENAME = "dhighscore.json"
 Highscore = load_highscore()
 score = 0
 
+#### Icons ####
+icon = pygame.image.load("assets/Dwain.png").convert_alpha()
+boom = pygame.image.load("assets/Boom.png").convert_alpha()
+bomb = pygame.image.load("assets/Bomb.png").convert_alpha()
+
+icon_scaled = pygame.transform.smoothscale(icon,(32,32))
+flag_img = pygame.transform.smoothscale(icon, (singletile.width, singletile.height))
+boom_img = pygame.transform.smoothscale(boom, (singletile.width, singletile.height))
+bomb_img = pygame.transform.smoothscale(bomb, (singletile.width, singletile.height))
+
+pygame.display.set_icon(icon_scaled)
 ##### Text Box ####
 textframe_x = gamefield.right+gap
 textframe_w = width - textframe_x - margin
@@ -89,13 +101,13 @@ def place_mines(grid,count_mines,click_i,click_j):
                                 grid[i][j]["neighbor_count"]+=1               # increase neighbor count
     return grid
 
-
 def reset_game():
     game_state = GameState.RUNNING
     first_click = True
 
     ##### Grid Creation #####
     grid = [[{"mine": False,
+            "exploded":False,
             "is_revealed": False,
             "is_flagged": False,
             "neighbor_count": 0}
@@ -124,6 +136,13 @@ def count_flags(grid):
             if grid[i][j]["is_flagged"] == True:
                 count += 1
     return count
+
+def reveal_all_mines(grid):
+    for i in range(tile_count_y):
+        for j in range(tile_count_x):
+            if grid[i][j]["mine"] == True:
+                grid[i][j]["is_revealed"] = True
+
 
 def get_grid_pos(mouse_pos):
     mouse_x,mouse_y = mouse_pos
@@ -190,6 +209,8 @@ while running:
                                     ###check game status ##
                             if grid[mouse_i][mouse_j]["mine"] == True:      ## if mine revealed
                                 game_state = GameState.GAME_OVER
+                                grid[mouse_i][mouse_j]["exploded"] = True
+                                reveal_all_mines(grid)
                             else:
                                 if check_win(grid):
                                     game_state = GameState.WON
@@ -224,7 +245,13 @@ while running:
                 pygame.draw.rect(screen,"white",rect=tile_rect)
                 pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
                 if grid[i][j]["mine"] == True:
-                    pygame.draw.circle(screen,"red",tile_rect.center,radius=(tile_rect.width/3))
+                    if grid[i][j]["exploded"] == True:
+                        boom_rect = boom_img.get_rect(center=tile_rect.center)
+                        screen.blit(boom_img,boom_rect)
+                    else:
+                        bomb_rect = bomb_img.get_rect(center=tile_rect.center)
+                        screen.blit(bomb_img,bomb_rect)
+                        #pygame.draw.circle(screen,"red",tile_rect.center,radius=(tile_rect.width/3))
 
                 if grid[i][j]["neighbor_count"] > 0:    ### if has neighbors
                     mines = grid[i][j]["neighbor_count"]    
@@ -236,9 +263,8 @@ while running:
                 pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
                 
                 if grid[i][j]["is_flagged"] == True: ##################################### if flagged draw flag ##################################
-                    flag_rect = pygame.Rect(0,0,tile_rect.width/2,tile_rect.height/2)
-                    flag_rect.center = tile_rect.center
-                    pygame.draw.rect(screen,"blue",rect=flag_rect)
+                    flag_rect = flag_img.get_rect(center=tile_rect.center)
+                    screen.blit(flag_img,flag_rect)
 
     ##### TextBox #####
     pygame.draw.rect(screen,"black",textframe,width=1)
