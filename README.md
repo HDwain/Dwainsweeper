@@ -4,6 +4,10 @@
 
 A classic Minesweeper game built in Python using Pygame-ce.
 
+## 📋 Prerequisites
+
+* **Python 3.10** or higher
+
 ## 💻 How to Run (Development Setup)
 
 1. Clone the repository and enter the folder:
