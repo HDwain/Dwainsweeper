@@ -311,31 +311,19 @@ while running:
     draw_text(screen, f"Press A to toggle Auto Restart: {auto_status}", font_small, auto_color, (textframe.centerx, textframe.bottom - 20))
 
     ################################ Game Over #########################################
-    if game_state == GameState.GAME_OVER:
+    if game_state in (GameState.GAME_OVER,GameState.WON):
 
-        ###### Game Over #######
-        overlay = pygame.Surface((gamefield.width, gamefield.height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 60))
-        screen.blit(overlay, gamefield.topleft) 
-        draw_text(screen,"GAME OVER !",font_large,"crimson",(gamefield.centerx,gamefield.centery-75),"black")
-
-        if options[OptionKey.AUTO_RESET]:
-                    remaining_seconds = 3 - ((pygame.time.get_ticks() - state_change_time) // 1000)
-                    draw_text(screen,f"Reset in: {remaining_seconds}",font,"crimson",(gamefield.centerx,gamefield.centery-25),"black")
-                    if (pygame.time.get_ticks() - state_change_time) > 3000:
-                        grid,game_state,mines_count,first_click = reset_game()
-
-    ######## Game Won #########
-    if game_state == GameState.WON:
+        color = "crimson"if game_state == GameState.GAME_OVER else "forestgreen"
+        text = "GAME OVER!"if game_state == GameState.GAME_OVER else "GAME WON"
         overlay = pygame.Surface((gamefield.width, gamefield.height), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 60))
         screen.blit(overlay, gamefield.topleft)  
-        draw_text(screen,"GAME WON",font_large,"forestgreen",(gamefield.centerx,gamefield.centery-75),"black")
+        draw_text(screen,text,font_large,color,(gamefield.centerx,gamefield.centery-75),"black")
 
         ### auto reset ### 
         if options[OptionKey.AUTO_RESET]:
             remaining_seconds = 3 - ((pygame.time.get_ticks() - state_change_time) // 1000)
-            draw_text(screen,f"Reset in: {remaining_seconds}",font,"forestgreen",(gamefield.centerx,gamefield.centery-25),"black")
+            draw_text(screen,f"Reset in: {remaining_seconds}",font,color,(gamefield.centerx,gamefield.centery-25),"black")
             if (pygame.time.get_ticks() - state_change_time) > 3000:
                 grid,game_state,mines_count,first_click = reset_game()
    #############################################################################################
