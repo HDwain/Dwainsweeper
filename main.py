@@ -11,6 +11,10 @@ class GameState(Enum):
     WON = auto()
     GAME_OVER = auto()
 
+class OptionKey(Enum):
+    AUTO_RESET = auto()
+    DIFFICULTY = auto()
+
 def load_highscore():
     try:
         with open(FILENAME,"r") as file:
@@ -40,14 +44,20 @@ clock = pygame.time.Clock()
 FILENAME = "dhighscore.json"
 Highscore = load_highscore()
 score = 0
+options = {
+    OptionKey.AUTO_RESET:False
+}
 
 #### Icons ####
 icon = pygame.image.load("assets/Dwain.png").convert_alpha()
+tile = pygame.image.load("assets/Tile.png")
+pin = pygame.image.load("assets/Pin.png").convert_alpha()
 boom = pygame.image.load("assets/Boom.png").convert_alpha()
 bomb = pygame.image.load("assets/Bomb.png").convert_alpha()
 
 icon_scaled = pygame.transform.smoothscale(icon,(32,32))
-flag_img = pygame.transform.smoothscale(icon, (singletile.width, singletile.height))
+tile_img = pygame.transform.scale(tile,(singletile.width, singletile.height))
+flag_img = pygame.transform.smoothscale(pin, (singletile.width, singletile.height))
 boom_img = pygame.transform.smoothscale(boom, (singletile.width, singletile.height))
 bomb_img = pygame.transform.smoothscale(bomb, (singletile.width, singletile.height))
 
@@ -124,7 +134,15 @@ def check_win(grid):
                 return False  
     return True
 
-def draw_text(surface, text, font, color, center_pos):
+def draw_text(surface, text, font, color, center_pos,outline_color=None):
+    x,y = center_pos
+
+    if outline_color:
+        for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+            text_surf = font.render(str(text), True, outline_color)
+            text_rect = text_surf.get_rect(center=(x + dx, y + dy))
+            surface.blit(text_surf, text_rect)
+
     text_surf = font.render(str(text), True, color)         #create text as picture
     text_rect = text_surf.get_rect(center=center_pos)       #position picture
     surface.blit(text_surf, text_rect)                      #Display on screen
@@ -180,6 +198,7 @@ def reveal_tile(grid,i,j):
             
 ######################## Game Loop ###############################    
 running = True
+state_change_time = 0
 grid,game_state,mines_count,first_click  = reset_game()
 while running:
 
@@ -193,6 +212,9 @@ while running:
                 if game_state != GameState.WON:
                     score = 0
                 grid,game_state,mines_count,first_click = reset_game()
+
+            if event.key == pygame.K_a:
+                options[OptionKey.AUTO_RESET] = not options[OptionKey.AUTO_RESET]
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # LMB                  
@@ -209,12 +231,14 @@ while running:
                                     ###check game status ##
                             if grid[mouse_i][mouse_j]["mine"] == True:      ## if mine revealed
                                 game_state = GameState.GAME_OVER
+                                state_change_time = pygame.time.get_ticks()
                                 grid[mouse_i][mouse_j]["exploded"] = True
                                 reveal_all_mines(grid)
                             else:
                                 if check_win(grid):
                                     game_state = GameState.WON
-                                    score += 1
+                                    state_change_time = pygame.time.get_ticks()
+                                    score += 1                                    
                                     if (score > Highscore):
                                         Highscore = score
                                         save_highscore(Highscore)
@@ -230,7 +254,7 @@ while running:
                                 grid[mouse_i][mouse_j]["is_flagged"] = False
 
     ################### Draw ###########################################################################
-    screen.fill("white")
+    screen.fill("lightblue")
     pygame.draw.rect(screen,color="grey",rect=gamefield,width=2)
     for i in range(tile_count_y):
         for j in range(tile_count_x):            
@@ -259,42 +283,61 @@ while running:
                     text_rect = text_surface.get_rect(center=tile_rect.center)  ### get center pos of rect
                     screen.blit(text_surface,text_rect)                         ### display picture at rect center
             else:
-                pygame.draw.rect(screen,"grey",rect=tile_rect)
-                pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
+                tile_rect = tile_img.get_rect(center=tile_rect.center)
+                screen.blit(tile_img,tile_rect)
+                #pygame.draw.rect(screen,"grey",rect=tile_rect)
+                #pygame.draw.rect(screen,"black",rect=tile_rect,width=1)
                 
                 if grid[i][j]["is_flagged"] == True: ##################################### if flagged draw flag ##################################
                     flag_rect = flag_img.get_rect(center=tile_rect.center)
                     screen.blit(flag_img,flag_rect)
 
     ##### TextBox #####
+    pygame.draw.rect(screen,"white",textframe)
     pygame.draw.rect(screen,"black",textframe,width=1)
     score_pos = (textframe.centerx,textframe.top + 40)
-    Highscore_pos = (textframe.centerx,textframe.top + 80)
-    flagged_pos = (textframe.centerx,textframe.bottom - 120)
+    Highscore_pos = (textframe.centerx,textframe.top + 70)
+    flagged_pos = (textframe.centerx,textframe.bottom - 110)
     mine_count_pos = (textframe.centerx,textframe.bottom - 80)
     reset_pos = (textframe.centerx,textframe.bottom - 40)
     draw_text(screen,f"Winning Streak: {score}",font,"black",score_pos)
     draw_text(screen,f"Highest Score: {Highscore}",font,"darkgreen",Highscore_pos)
     draw_text(screen,f"Mines: {mines_count}",font,"black",mine_count_pos) 
-    draw_text(screen,f"Flagges: {count_flags(grid)}",font,"black",flagged_pos)
+    draw_text(screen,f"Pins: {count_flags(grid)}",font,"black",flagged_pos)
     draw_text(screen,"Press R to Restart",font_small,"red",reset_pos)
+
+    auto_color = "darkgreen" if options[OptionKey.AUTO_RESET] else "red"
+    auto_status = "ON" if options[OptionKey.AUTO_RESET] else "OFF"
+    draw_text(screen, f"Press A to toggle Auto Restart: {auto_status}", font_small, auto_color, (textframe.centerx, textframe.bottom - 20))
 
     ################################ Game Over #########################################
     if game_state == GameState.GAME_OVER:
 
         ###### Game Over #######
-        text_surface = font_large.render("GAME OVER !",True,"crimson") #change to picture
-        text_rect = text_surface.get_rect(center=gamefield.center) #
-        text_rect.centery = gamefield.top + gamefield.height / 3 + 10
-        screen.blit(text_surface,text_rect)
+        overlay = pygame.Surface((gamefield.width, gamefield.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 60))
+        screen.blit(overlay, gamefield.topleft) 
+        draw_text(screen,"GAME OVER !",font_large,"crimson",(gamefield.centerx,gamefield.centery-75),"black")
+
+        if options[OptionKey.AUTO_RESET]:
+                    remaining_seconds = 3 - ((pygame.time.get_ticks() - state_change_time) // 1000)
+                    draw_text(screen,f"Reset in: {remaining_seconds}",font,"crimson",(gamefield.centerx,gamefield.centery-25),"black")
+                    if (pygame.time.get_ticks() - state_change_time) > 3000:
+                        grid,game_state,mines_count,first_click = reset_game()
 
     ######## Game Won #########
     if game_state == GameState.WON:
-        text_surface = font_large.render("YOU WON !",True,"forestgreen")
-        text_rect = text_surface.get_rect(center=gamefield.center)
-        text_rect.centery = gamefield.top + gamefield.height / 3 + 10
-        screen.blit(text_surface,text_rect)        
+        overlay = pygame.Surface((gamefield.width, gamefield.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 60))
+        screen.blit(overlay, gamefield.topleft)  
+        draw_text(screen,"GAME WON",font_large,"forestgreen",(gamefield.centerx,gamefield.centery-75),"black")
 
+        ### auto reset ### 
+        if options[OptionKey.AUTO_RESET]:
+            remaining_seconds = 3 - ((pygame.time.get_ticks() - state_change_time) // 1000)
+            draw_text(screen,f"Reset in: {remaining_seconds}",font,"forestgreen",(gamefield.centerx,gamefield.centery-25),"black")
+            if (pygame.time.get_ticks() - state_change_time) > 3000:
+                grid,game_state,mines_count,first_click = reset_game()
    #############################################################################################
 
     pygame.display.flip() #Show Screen
